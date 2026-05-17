@@ -83,7 +83,6 @@
     .btn:active { transform: scale(0.97); }
     .btn-cancel { background: var(--surface2); color: var(--text2); }
     .btn-save { background: var(--accent); color: #fff; }
-    .btn-save:disabled { background: var(--border2); color: var(--text3); }
     .btn-delete { background: #2e1212; color: var(--red); border: 1px solid #5a202044; }
     .detail-company { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
     .detail-role { font-size: 14px; color: var(--text2); margin-bottom: 10px; }
@@ -91,7 +90,8 @@
     .detail-cell { background: var(--bg); border-radius: 10px; padding: 10px 12px; }
     .detail-cell.full { grid-column: 1 / -1; }
     .detail-cell-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 4px; }
-    .detail-cell-val { font-size: 14px; } .detail-cell-val.mono { font-family: 'DM Mono', monospace; }
+    .detail-cell-val { font-size: 14px; }
+    .detail-cell-val.mono { font-family: 'DM Mono', monospace; }
     .detail-cell-val a { color: var(--blue); text-decoration: none; }
     .ai-btn { width: 100%; background: var(--bg); border: 1px dashed var(--border2); border-radius: 12px; padding: 13px; color: var(--text2); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
     .ai-tip { background: #0d1a2e; border: 1px solid #1a3055; border-radius: 12px; padding: 14px; font-size: 14px; color: #b0c8e8; line-height: 1.6; margin-bottom: 16px; }
@@ -102,7 +102,10 @@
 <div class="app">
   <div class="topbar">
     <div class="topbar-title">Bewer<span>bungen</span></div>
-    <button class="btn-add" onclick="openAdd()">+</button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="exportCSV()" style="background:var(--surface2);color:var(--text2);border:1px solid var(--border2);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;">↓ CSV</button>
+      <button class="btn-add" onclick="openAdd()">+</button>
+    </div>
   </div>
   <div class="status-bar" id="statusBar"></div>
   <div class="content">
@@ -160,6 +163,16 @@ function save() { localStorage.setItem('bewerbungen',JSON.stringify(apps)); setS
 function setStatus(msg) { document.getElementById('statusBar').textContent=msg; setTimeout(()=>document.getElementById('statusBar').textContent='',2000); }
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
+function exportCSV() {
+  const header=['Unternehmen','Position','Ort','Datum','Status','Headhunter','Link','NDA','Notizen'];
+  const rows=apps.map(a=>[a.unternehmen,a.position,a.ort,a.datum,STATUS[a.status]?.label||a.status,a.headhunter,a.link,a.nda?'Ja':'Nein',a.notiz].map(v=>'"'+(v||'').replace(/"/g,'""')+'"').join(','));
+  const csv='\uFEFF'+[header.join(','),...rows].join('\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a'); a.href=url; a.download='Bewerbungen.csv'; a.click();
+  URL.revokeObjectURL(url);
+}
+
 function render() {
   const s={ gesamt:apps.length, offen:apps.filter(a=>['beworben','wartend'].includes(a.status)).length, interviews:apps.filter(a=>a.status==='interview').length, angebote:apps.filter(a=>a.status==='angebot').length };
   document.getElementById('statsEl').innerHTML=[['Gesamt',s.gesamt],['Offen',s.offen],['Interviews',s.interviews],['Angebote',s.angebote]].map(([l,v])=>`<div class="stat"><div class="stat-num">${v}</div><div class="stat-label">${l}</div></div>`).join('');
@@ -180,11 +193,16 @@ function render() {
 }
 
 function setFilter(f){ filter=f; render(); }
+
 function openAdd(){ editingId=null; ndaVal=false; document.getElementById('formTitle').textContent='Neue Bewerbung'; ['unternehmen','position','ort','headhunter','link','notiz'].forEach(k=>document.getElementById('f-'+k).value=''); document.getElementById('f-datum').value=new Date().toISOString().split('T')[0]; document.getElementById('f-status').value='beworben'; updateNdaUI(); openOverlay('formOverlay'); }
+
 function openEdit(id){ const app=apps.find(a=>a.id===id); if(!app)return; editingId=id; ndaVal=!!app.nda; document.getElementById('formTitle').textContent='Bearbeiten'; ['unternehmen','position','ort','headhunter','link','notiz'].forEach(k=>document.getElementById('f-'+k).value=app[k]||''); document.getElementById('f-datum').value=app.datum||''; document.getElementById('f-status').value=app.status||'beworben'; updateNdaUI(); closeOverlay('detailOverlay'); openOverlay('formOverlay'); }
+
 function toggleNda(){ ndaVal=!ndaVal; updateNdaUI(); }
 function updateNdaUI(){ document.getElementById('ndaToggle').className='toggle-track'+(ndaVal?' on':''); }
+
 function handleSave(){ const u=document.getElementById('f-unternehmen').value.trim(),p=document.getElementById('f-position').value.trim(); if(!u||!p)return; const app={id:editingId||Date.now().toString(),unternehmen:u,position:p,ort:document.getElementById('f-ort').value.trim(),datum:document.getElementById('f-datum').value,status:document.getElementById('f-status').value,headhunter:document.getElementById('f-headhunter').value.trim(),link:document.getElementById('f-link').value.trim(),nda:ndaVal,notiz:document.getElementById('f-notiz').value.trim()}; if(editingId){apps=apps.map(a=>a.id===editingId?app:a);}else{apps.unshift(app);} save(); render(); closeOverlay('formOverlay'); }
+
 function handleDelete(id){ if(!confirm('Bewerbung löschen?'))return; apps=apps.filter(a=>a.id!==id); save(); render(); closeOverlay('detailOverlay'); }
 
 function openDetail(id){
@@ -224,7 +242,7 @@ async function getAiTip(id){
     const tip=data.content?.find(b=>b.type==='text')?.text||'Kein Tipp.';
     box.innerHTML=`<div class="ai-tip">${tip}</div>`;
     btn.textContent='✨ Neuen Tipp laden';
-  } catch { box.innerHTML=`<div class="ai-tip" style="color:var(--red)">Tipp konnte nicht geladen werden.</div>`; btn.textContent='✨ KI-Tipp für nächsten Schritt'; }
+  } catch { box.innerHTML=`<div class="ai-tip" style="color:var(--red)">Tipp konnte nicht geladen werden.</div>`; btn.textContent='✨ KI-Tipp'; }
 }
 
 function openOverlay(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
