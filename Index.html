@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Bewerbungen" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>Bewerbungstracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a14; --surface: #11111e; --surface2: #181828;
+      --border: #22223a; --border2: #2e2e4e; --text: #f0f0ff;
+      --text2: #8888b0; --text3: #4a4a70; --accent: #6c63ff;
+      --accent2: #8b5cf6; --blue: #6C9EE8; --yellow: #F0C96B;
+      --green: #5DD9A4; --red: #E87070; --grey: #9E9EA8;
+      --purple: #b07ad0; --teal: #70c0a0;
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { background: var(--bg); color: var(--text); font-family: 'Syne', sans-serif; min-height: 100vh; overflow-x: hidden; }
+    .app { display: flex; flex-direction: column; min-height: 100vh; }
+    .topbar { position: sticky; top: 0; z-index: 50; background: rgba(10,10,20,0.92); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border-bottom: 1px solid var(--border); padding: calc(var(--safe-top) + 14px) 20px 14px; display: flex; align-items: center; justify-content: space-between; }
+    .topbar-title { font-size: 18px; font-weight: 800; letter-spacing: -0.03em; }
+    .topbar-title span { color: var(--accent); }
+    .btn-add { background: var(--accent); color: #fff; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-family: inherit; transition: transform 0.15s; box-shadow: 0 4px 20px rgba(108,99,255,0.4); }
+    .btn-add:active { transform: scale(0.92); }
+    .content { flex: 1; padding: 16px 16px calc(var(--safe-bottom) + 16px); max-width: 600px; margin: 0 auto; width: 100%; }
+    .stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 18px; }
+    .stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 8px; text-align: center; }
+    .stat-num { font-size: 22px; font-weight: 800; font-family: 'DM Mono', monospace; }
+    .stat-label { font-size: 9px; color: var(--text3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+    .filters { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-btn { flex-shrink: 0; border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text3); transition: all 0.2s; }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .cards { display: flex; flex-direction: column; gap: 8px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 15px 16px; cursor: pointer; transition: border-color 0.2s, transform 0.15s; animation: fadeIn 0.25s ease; }
+    .card:active { transform: scale(0.985); }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+    .card-company { font-size: 16px; font-weight: 700; letter-spacing: -0.02em; flex: 1; }
+    .card-meta { font-size: 12px; color: var(--text3); font-family: 'DM Mono', monospace; }
+    .card-role { font-size: 13px; color: var(--text2); margin-bottom: 8px; }
+    .card-badges { display: flex; flex-wrap: wrap; gap: 5px; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; border: 1px solid transparent; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .badge-beworben  { background: #1a2a45; color: var(--blue);   border-color: #2a4a8544; }
+    .badge-interview { background: #2e2300; color: var(--yellow); border-color: #5a430044; }
+    .badge-angebot   { background: #0d2e22; color: var(--green);  border-color: #1a5a3a44; }
+    .badge-absage    { background: #2e1212; color: var(--red);    border-color: #5a202044; }
+    .badge-wartend   { background: #1e1e28; color: var(--grey);   border-color: #3a3a5044; }
+    .badge-nda       { background: #1e1228; color: var(--purple); border-color: #6a3a8844; }
+    .badge-hh        { background: #12201e; color: var(--teal);   border-color: #3a6a5844; }
+    .empty { text-align: center; padding: 60px 20px; border: 1px dashed var(--border2); border-radius: 20px; }
+    .empty-icon { font-size: 40px; margin-bottom: 12px; }
+    .empty-title { font-size: 15px; font-weight: 700; color: var(--text2); margin-bottom: 6px; }
+    .empty-sub { font-size: 13px; color: var(--text3); }
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+    .overlay.open { opacity: 1; pointer-events: all; }
+    .sheet { background: var(--surface); border-radius: 24px 24px 0 0; width: 100%; max-width: 600px; max-height: 92vh; overflow-y: auto; padding: 0 20px calc(var(--safe-bottom) + 24px); transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.32,0.72,0,1); }
+    .overlay.open .sheet { transform: translateY(0); }
+    .sheet-handle { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 12px auto 20px; }
+    .sheet-title { font-size: 18px; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 20px; }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 10px; color: var(--text3); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+    .field input, .field select, .field textarea { width: 100%; background: var(--bg); border: 1px solid var(--border2); border-radius: 10px; padding: 11px 14px; color: var(--text); font-size: 15px; font-family: inherit; outline: none; transition: border-color 0.2s; -webkit-appearance: none; }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+    .field textarea { resize: none; }
+    .field input::placeholder, .field textarea::placeholder { color: var(--text3); }
+    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .toggle-label { font-size: 10px; color: var(--text3); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+    .toggle-track { width: 44px; height: 24px; border-radius: 12px; background: var(--border2); border: 1px solid var(--border2); position: relative; cursor: pointer; transition: background 0.2s; }
+    .toggle-track.on { background: var(--accent); border-color: var(--accent); }
+    .toggle-thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--text3); transition: left 0.2s, background 0.2s; }
+    .toggle-track.on .toggle-thumb { left: 22px; background: #fff; }
+    .btn-row { display: flex; gap: 10px; margin-top: 8px; }
+    .btn { flex: 1; border: none; border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 700; font-family: inherit; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+    .btn:active { transform: scale(0.97); }
+    .btn-cancel { background: var(--surface2); color: var(--text2); }
+    .btn-save { background: var(--accent); color: #fff; }
+    .btn-save:disabled { background: var(--border2); color: var(--text3); }
+    .btn-delete { background: #2e1212; color: var(--red); border: 1px solid #5a202044; }
+    .detail-company { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 4px; }
+    .detail-role { font-size: 14px; color: var(--text2); margin-bottom: 10px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; margin-top: 16px; }
+    .detail-cell { background: var(--bg); border-radius: 10px; padding: 10px 12px; }
+    .detail-cell.full { grid-column: 1 / -1; }
+    .detail-cell-label { font-size: 9px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 4px; }
+    .detail-cell-val { font-size: 14px; } .detail-cell-val.mono { font-family: 'DM Mono', monospace; }
+    .detail-cell-val a { color: var(--blue); text-decoration: none; }
+    .ai-btn { width: 100%; background: var(--bg); border: 1px dashed var(--border2); border-radius: 12px; padding: 13px; color: var(--text2); cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 10px; }
+    .ai-tip { background: #0d1a2e; border: 1px solid #1a3055; border-radius: 12px; padding: 14px; font-size: 14px; color: #b0c8e8; line-height: 1.6; margin-bottom: 16px; }
+    .status-bar { font-size: 11px; color: var(--text3); padding: 6px 20px 0; max-width: 600px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-title">Bewer<span>bungen</span></div>
+    <button class="btn-add" onclick="openAdd()">+</button>
+  </div>
+  <div class="status-bar" id="statusBar"></div>
+  <div class="content">
+    <div class="stats" id="statsEl"></div>
+    <div class="filters" id="filtersEl"></div>
+    <div class="cards" id="cardsEl"></div>
+  </div>
+</div>
+<div class="overlay" id="formOverlay" onclick="handleOverlayClick(event,'formOverlay')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="formTitle">Neue Bewerbung</div>
+    <div class="field"><label>Unternehmen *</label><input id="f-unternehmen" placeholder="z.B. Siemens AG" /></div>
+    <div class="field"><label>Position *</label><input id="f-position" placeholder="z.B. Product Manager" /></div>
+    <div class="field"><label>Ort</label><input id="f-ort" placeholder="z.B. München" /></div>
+    <div class="field"><label>Datum</label><input type="date" id="f-datum" /></div>
+    <div class="field"><label>Status</label>
+      <select id="f-status">
+        <option value="beworben">Beworben</option>
+        <option value="wartend">Wartend</option>
+        <option value="interview">Interview</option>
+        <option value="angebot">Angebot 🎉</option>
+        <option value="absage">Absage</option>
+      </select>
+    </div>
+    <div class="field"><label>Headhunter-Kontakt</label><input id="f-headhunter" placeholder="z.B. Anna Müller, XY Recruiting" /></div>
+    <div class="field"><label>Link</label><input id="f-link" placeholder="https://…" /></div>
+    <div class="toggle-row">
+      <span class="toggle-label">NDA unterzeichnet</span>
+      <div class="toggle-track" id="ndaToggle" onclick="toggleNda()"><div class="toggle-thumb"></div></div>
+    </div>
+    <div class="field"><label>Notizen</label><textarea id="f-notiz" rows="3" placeholder="Ansprechpartner, Gehalt, Eindrücke…"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-cancel" onclick="closeOverlay('formOverlay')">Abbrechen</button>
+      <button class="btn btn-save" onclick="handleSave()">Speichern</button>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="detailOverlay" onclick="handleOverlayClick(event,'detailOverlay')">
+  <div class="sheet"><div class="sheet-handle"></div><div id="detailContent"></div></div>
+</div>
+<script>
+const STATUS = {
+  beworben:  { label:'Beworben',    cls:'badge-beworben',  dot:'#6C9EE8' },
+  interview: { label:'Interview',   cls:'badge-interview', dot:'#F0C96B' },
+  angebot:   { label:'Angebot 🎉', cls:'badge-angebot',  dot:'#5DD9A4' },
+  absage:    { label:'Absage',      cls:'badge-absage',   dot:'#E87070' },
+  wartend:   { label:'Wartend',     cls:'badge-wartend',  dot:'#9E9EA8' },
+};
+const STATUS_ORDER = ['beworben','wartend','interview','angebot','absage'];
+let apps=[], filter='alle', editingId=null, ndaVal=false;
+
+function load() { try { apps=JSON.parse(localStorage.getItem('bewerbungen')||'[]'); } catch { apps=[]; } }
+function save() { localStorage.setItem('bewerbungen',JSON.stringify(apps)); setStatus('✓ Gespeichert'); }
+function setStatus(msg) { document.getElementById('statusBar').textContent=msg; setTimeout(()=>document.getElementById('statusBar').textContent='',2000); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function render() {
+  const s={ gesamt:apps.length, offen:apps.filter(a=>['beworben','wartend'].includes(a.status)).length, interviews:apps.filter(a=>a.status==='interview').length, angebote:apps.filter(a=>a.status==='angebot').length };
+  document.getElementById('statsEl').innerHTML=[['Gesamt',s.gesamt],['Offen',s.offen],['Interviews',s.interviews],['Angebote',s.angebote]].map(([l,v])=>`<div class="stat"><div class="stat-num">${v}</div><div class="stat-label">${l}</div></div>`).join('');
+  document.getElementById('filtersEl').innerHTML=['alle',...STATUS_ORDER].map(s=>`<button class="filter-btn ${filter===s?'active':''}" onclick="setFilter('${s}')">${s==='alle'?'Alle':STATUS[s].label}</button>`).join('');
+  const list=filter==='alle'?apps:apps.filter(a=>a.status===filter);
+  if(!list.length){ document.getElementById('cardsEl').innerHTML=`<div class="empty"><div class="empty-icon">📂</div><div class="empty-title">Keine Bewerbungen</div><div class="empty-sub">Tippe auf + um zu starten</div></div>`; return; }
+  document.getElementById('cardsEl').innerHTML=list.map(app=>{
+    const s=STATUS[app.status]||STATUS.wartend;
+    return `<div class="card" onclick="openDetail('${app.id}')">
+      <div class="card-top"><div class="card-company">${esc(app.unternehmen)}</div><div class="card-meta">${app.datum||''}</div></div>
+      <div class="card-role">${esc(app.position)}${app.ort?' · '+esc(app.ort):''}${app.headhunter?' · via '+esc(app.headhunter):''}</div>
+      <div class="card-badges">
+        <span class="badge ${s.cls}"><span class="badge-dot" style="background:${s.dot}"></span>${s.label}</span>
+        ${app.nda?'<span class="badge badge-nda">NDA</span>':''}
+        ${app.headhunter?'<span class="badge badge-hh">👤 HH</span>':''}
+      </div></div>`;
+  }).join('');
+}
+
+function setFilter(f){ filter=f; render(); }
+function openAdd(){ editingId=null; ndaVal=false; document.getElementById('formTitle').textContent='Neue Bewerbung'; ['unternehmen','position','ort','headhunter','link','notiz'].forEach(k=>document.getElementById('f-'+k).value=''); document.getElementById('f-datum').value=new Date().toISOString().split('T')[0]; document.getElementById('f-status').value='beworben'; updateNdaUI(); openOverlay('formOverlay'); }
+function openEdit(id){ const app=apps.find(a=>a.id===id); if(!app)return; editingId=id; ndaVal=!!app.nda; document.getElementById('formTitle').textContent='Bearbeiten'; ['unternehmen','position','ort','headhunter','link','notiz'].forEach(k=>document.getElementById('f-'+k).value=app[k]||''); document.getElementById('f-datum').value=app.datum||''; document.getElementById('f-status').value=app.status||'beworben'; updateNdaUI(); closeOverlay('detailOverlay'); openOverlay('formOverlay'); }
+function toggleNda(){ ndaVal=!ndaVal; updateNdaUI(); }
+function updateNdaUI(){ document.getElementById('ndaToggle').className='toggle-track'+(ndaVal?' on':''); }
+function handleSave(){ const u=document.getElementById('f-unternehmen').value.trim(),p=document.getElementById('f-position').value.trim(); if(!u||!p)return; const app={id:editingId||Date.now().toString(),unternehmen:u,position:p,ort:document.getElementById('f-ort').value.trim(),datum:document.getElementById('f-datum').value,status:document.getElementById('f-status').value,headhunter:document.getElementById('f-headhunter').value.trim(),link:document.getElementById('f-link').value.trim(),nda:ndaVal,notiz:document.getElementById('f-notiz').value.trim()}; if(editingId){apps=apps.map(a=>a.id===editingId?app:a);}else{apps.unshift(app);} save(); render(); closeOverlay('formOverlay'); }
+function handleDelete(id){ if(!confirm('Bewerbung löschen?'))return; apps=apps.filter(a=>a.id!==id); save(); render(); closeOverlay('detailOverlay'); }
+
+function openDetail(id){
+  const app=apps.find(a=>a.id===id); if(!app)return;
+  const s=STATUS[app.status]||STATUS.wartend;
+  document.getElementById('detailContent').innerHTML=`
+    <div class="detail-company">${esc(app.unternehmen)}</div>
+    <div class="detail-role">${esc(app.position)}${app.ort?' · '+esc(app.ort):''}</div>
+    <div class="card-badges">
+      <span class="badge ${s.cls}"><span class="badge-dot" style="background:${s.dot}"></span>${s.label}</span>
+      ${app.nda?'<span class="badge badge-nda">NDA</span>':''}
+      ${app.headhunter?'<span class="badge badge-hh">👤 HH</span>':''}
+    </div>
+    <div class="detail-grid">
+      <div class="detail-cell"><div class="detail-cell-label">Datum</div><div class="detail-cell-val mono">${app.datum||'–'}</div></div>
+      <div class="detail-cell"><div class="detail-cell-label">NDA</div><div class="detail-cell-val" style="color:${app.nda?'var(--purple)':'var(--text3)'}">${app.nda?'✓ Ja':'Nein'}</div></div>
+      ${app.headhunter?`<div class="detail-cell full"><div class="detail-cell-label">👤 Headhunter</div><div class="detail-cell-val" style="color:var(--teal)">${esc(app.headhunter)}</div></div>`:''}
+      ${app.link?`<div class="detail-cell full"><div class="detail-cell-label">Link</div><div class="detail-cell-val"><a href="${esc(app.link)}" target="_blank">Zur Stelle →</a></div></div>`:''}
+      ${app.notiz?`<div class="detail-cell full"><div class="detail-cell-label">Notizen</div><div class="detail-cell-val" style="color:var(--text2);line-height:1.5;white-space:pre-wrap">${esc(app.notiz)}</div></div>`:''}
+    </div>
+    <button class="ai-btn" onclick="getAiTip('${id}')">✨ KI-Tipp für nächsten Schritt</button>
+    <div id="aiTipBox"></div>
+    <div class="btn-row">
+      <button class="btn btn-delete" onclick="handleDelete('${id}')">Löschen</button>
+      <button class="btn btn-save" onclick="openEdit('${id}')">Bearbeiten</button>
+    </div>`;
+  openOverlay('detailOverlay');
+}
+
+async function getAiTip(id){
+  const app=apps.find(a=>a.id===id); if(!app)return;
+  const btn=document.querySelector('.ai-btn'), box=document.getElementById('aiTipBox');
+  btn.textContent='⏳ Lade Tipp…';
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Du bist ein Bewerbungscoach. Gib einen kurzen, konkreten Tipp (3-4 Sätze) auf Deutsch. Unternehmen: ${app.unternehmen}, Position: ${app.position}, Status: ${STATUS[app.status]?.label}, NDA: ${app.nda?'Ja':'Nein'}, Headhunter: ${app.headhunter||'–'}, Notiz: ${app.notiz||'–'}. Tipp:`}]})});
+    const data=await res.json();
+    const tip=data.content?.find(b=>b.type==='text')?.text||'Kein Tipp.';
+    box.innerHTML=`<div class="ai-tip">${tip}</div>`;
+    btn.textContent='✨ Neuen Tipp laden';
+  } catch { box.innerHTML=`<div class="ai-tip" style="color:var(--red)">Tipp konnte nicht geladen werden.</div>`; btn.textContent='✨ KI-Tipp für nächsten Schritt'; }
+}
+
+function openOverlay(id){ document.getElementById(id).classList.add('open'); document.body.style.overflow='hidden'; }
+function closeOverlay(id){ document.getElementById(id).classList.remove('open'); document.body.style.overflow=''; }
+function handleOverlayClick(e,id){ if(e.target===document.getElementById(id)) closeOverlay(id); }
+
+load(); render();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
